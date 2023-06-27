@@ -57,16 +57,16 @@ final_df = final_df.loc[maskNaN]
 final_df['PUArea'] = final_df['PUArea'].astype('Int64')
 final_df['DOArea'] = final_df['DOArea'].astype('Int64')
 
-# Keep only trips within the 9 areas in lower Manhattan
-mask9 = (final_df['PUArea'] <= 9) & (final_df['DOArea'] <= 9)
-final9_df = final_df.loc[mask9]
+# Keep only trips within a selected number of areas in Manhattan
+mask_areas = (final_df['PUArea'] <= 4) & (final_df['DOArea'] <= 4)
+final_areas_df = final_df.loc[mask_areas]
 # Show the features in dataset along datatype
-# final9_df.info()
+# final_areas_df.info()
 
 # Keep only ride requests received within the time window specified below. Choose the time period.
 h_in = 18
-time_period = 5 # minutes
-sim_duration = 1 * 60 # minutes
+time_period = 5  # minutes
+sim_duration = time_period * 2  # minutes
 ini = datetime.datetime(int(yyyy), int(mm), int(dd_in), h_in, 0, 0)
 delta_min = datetime.timedelta(seconds=time_period * 60)
 num_it = int(sim_duration / time_period)
@@ -75,13 +75,14 @@ records = {}
 numRequestsRed = 0
 
 # Subsample the ride requests. Choose scaling factor below
-scalingFactor = 2
+scalingFactor = 1
 for i in range(num_it):
-    mask9min = (final9_df['tpep_pickup_datetime'] >= ini) & (final9_df['tpep_pickup_datetime'] < ini + delta_min)
-    final9min = final9_df.loc[mask9min]
-    numRequests = len(final9min)
-    PU_arr = final9min['PUArea'].tolist()
-    DO_arr = final9min['DOArea'].tolist()
+    mask_areas_min = (final_areas_df['tpep_pickup_datetime'] >= ini) & (
+                final_areas_df['tpep_pickup_datetime'] < ini + delta_min)
+    final_areas_min = final_areas_df.loc[mask_areas_min]
+    numRequests = len(final_areas_min)
+    PU_arr = final_areas_min['PUArea'].tolist()
+    DO_arr = final_areas_min['DOArea'].tolist()
 
     print(str(numRequests) + " requests between " + str(ini) + " and " + str(ini + delta_min))
     print("Keep: " + str(round(numRequests / scalingFactor)))
