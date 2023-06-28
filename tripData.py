@@ -58,15 +58,15 @@ final_df['PUArea'] = final_df['PUArea'].astype('Int64')
 final_df['DOArea'] = final_df['DOArea'].astype('Int64')
 
 # Keep only trips within a selected number of areas in Manhattan
-mask_areas = (final_df['PUArea'] <= 4) & (final_df['DOArea'] <= 4)
+mask_areas = (final_df['PUArea'] <= 9) & (final_df['DOArea'] <= 9)
 final_areas_df = final_df.loc[mask_areas]
 # Show the features in dataset along datatype
 # final_areas_df.info()
 
 # Keep only ride requests received within the time window specified below. Choose the time period.
-h_in = 18
+h_in = 6
 time_period = 5  # minutes
-sim_duration = time_period * 2  # minutes
+sim_duration = 60*18  # minutes
 ini = datetime.datetime(int(yyyy), int(mm), int(dd_in), h_in, 0, 0)
 delta_min = datetime.timedelta(seconds=time_period * 60)
 num_it = int(sim_duration / time_period)
@@ -106,4 +106,4 @@ for i in range(num_it):
     records[i] = [PUReduced, DOReduced]
     ini = ini + delta_min
 
-print("Total number riding requests: " + str(numRequestsRed))
+print("Total number riding requests:", numRequestsRed)

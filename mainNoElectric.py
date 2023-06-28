@@ -7,17 +7,17 @@ import cvxpy as cp
 # import matplotlib.pyplot as plt
 
 # Fleet size
-n_veh = 100
+n_veh = 9*20
 
 # DiGraph - unweighted
 g = nx.DiGraph()
-# elist = [(1, 2), (1, 3), (2, 1), (2, 3), (2, 4), (2, 5), (3, 1), (3, 2), (3, 4), (3, 5), (4, 2), (4, 3), (4, 5),
-#          (4, 6),
-#          (4, 7), (5, 2), (5, 3), (5, 4),
-#          (5, 6), (5, 7), (6, 4), (6, 5), (6, 7), (6, 8), (6, 9), (7, 4), (7, 6), (7, 8), (7, 9), (8, 6), (8, 7),
-#          (8, 9),
-#          (9, 6), (9, 7), (9, 8)]
-elist = [(1, 2), (1, 3), (2, 1), (2, 4), (3, 1), (3, 4), (4, 2), (4, 3)]
+elist = [(1, 2), (1, 3), (2, 1), (2, 3), (2, 4), (2, 5), (3, 1), (3, 2), (3, 4), (3, 5), (4, 2), (4, 3), (4, 5),
+         (4, 6),
+         (4, 7), (5, 2), (5, 3), (5, 4),
+         (5, 6), (5, 7), (6, 4), (6, 5), (6, 7), (6, 8), (6, 9), (7, 4), (7, 6), (7, 8), (7, 9), (8, 6), (8, 7),
+         (8, 9),
+         (9, 6), (9, 7), (9, 8)]
+# elist = [(1, 2), (1, 3), (2, 1), (2, 4), (3, 1), (3, 4), (4, 2), (4, 3)]
 g.add_edges_from(elist)
 numNodes = g.number_of_nodes()
 # nx.draw(g)
@@ -44,8 +44,9 @@ for sublist in tau:
     for item in sublist:
         flat_tau.append(item)
 
-counter1 = [0 for i in range(numNodes)]
-counter2 = [0 for i in range(numNodes)]
+counters = {}
+for i in range(max(flat_tau)):
+    counters[i] = [0] * numNodes
 
 total_missed_rides = 0
 
@@ -81,14 +82,14 @@ def optimize_x(pu_loc, do_loc, x_idle):
         - gamma * cp.sum([x[i] for i in range(0, numNodes ** 2, numNodes + 1)]))
     constraints = []
     constraints += [x >= 0]
-    constraints += [cp.sum(x) == sum(x_idle) + sum(counter1)]
+    constraints += [cp.sum(x) == sum(x_idle) + sum(counters[0])]
     for i in range(numNodes ** 2):
         constraints += [z_price[i] <= flat_tau[i] * 3 * beta]
         constraints += [flat_demand_matrix[i] * (1 - z_price[i] / (flat_tau[i] * 3 * beta)) <= x[i]]
     for i in range(numNodes):
         # constraints += [cp.sum([x[i * numNodes + n] for n in range(numNodes)]) == cp.sum([x[i + numNodes * n]
         # for n in range(numNodes)])]
-        constraints += [cp.sum([x[i * numNodes + n] for n in range(numNodes)]) == x_idle[i] + counter1[i]]
+        constraints += [cp.sum([x[i * numNodes + n] for n in range(numNodes)]) == x_idle[i] + counters[0][i]]
     problem = cp.Problem(objective, constraints)
     problem.solve()
 
@@ -105,16 +106,18 @@ def optimize_x(pu_loc, do_loc, x_idle):
     x_idle = [x_action[i][i] for i in range(numNodes)]
 
     # Update counters
+    for t in range(max(flat_tau)-1):
+        for i in range(numNodes):
+            counters[t][i] = counters[t+1][i]
+
     for i in range(numNodes):
-        counter1[i] = counter2[i]
-        counter2[i] = 0
+        counters[max(flat_tau)-1][i] = 0
+
     for i in range(numNodes):
         for j in range(numNodes):
             if x_action[i][j] != 0 and i != j:
-                if tau[i][j] == 1:
-                    counter1[j] += x_action[i][j]
-                else:
-                    counter2[j] += x_action[i][j]
+                travel_time = tau[i][j]
+                counters[travel_time-1][j] += x_action[i][j]
 
     # Missed requests
     miss_rides = 0
@@ -134,11 +137,13 @@ for k in range(tData.num_it):
     DOLoc = tData.records[k][1]
 
     print("*** Minute: " + str(k * tData.time_period) + " ***")
-    print("currently idling", np.round(x_bar, 2))
-    print("counter1", np.round(counter1, 2))
-    print("counter2", np.round(counter2, 2))
-    print("total number vehicles:", int(sum(x_bar) + sum(counter1) + sum(counter2)))
+    print("idling vehicles:", np.round(sum(x_bar), 2))
+    for i in range(max(flat_tau)):
+        print("counter" + str(i), np.round(counters[i], 2))
+    print("total number vehicles:", np.round(sum(x_bar) + sum([sum(counters[i]) for i in range(len(counters))])))
+    print("vehicles riding:", np.round(sum([sum(counters[i]) for i in range(len(counters))]), 2))
     x_bar, missed_rides = optimize_x(PULoc, DOLoc, x_bar)
     total_missed_rides += missed_rides
 
 print("Total missed rides:", int(total_missed_rides))
+print("QoS:", np.round(100 - (total_missed_rides / tData.numRequestsRed * 100), 2))
