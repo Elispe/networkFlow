@@ -66,7 +66,7 @@ final_areas_df = final_df.loc[mask_areas]
 # Keep only ride requests received within the time window specified below. Choose the time period.
 h_in = 6
 time_period = 5  # minutes
-sim_duration = 60*18  # minutes
+sim_duration = 60 * 18  # minutes
 ini = datetime.datetime(int(yyyy), int(mm), int(dd_in), h_in, 0, 0)
 delta_min = datetime.timedelta(seconds=time_period * 60)
 num_it = int(sim_duration / time_period)
@@ -78,7 +78,7 @@ numRequestsRed = 0
 scalingFactor = 1
 for i in range(num_it):
     mask_areas_min = (final_areas_df['tpep_pickup_datetime'] >= ini) & (
-                final_areas_df['tpep_pickup_datetime'] < ini + delta_min)
+            final_areas_df['tpep_pickup_datetime'] < ini + delta_min)
     final_areas_min = final_areas_df.loc[mask_areas_min]
     numRequests = len(final_areas_min)
     PU_arr = final_areas_min['PUArea'].tolist()

@@ -1,4 +1,4 @@
-# Network flow
+# Non-electric case
 import tripData as tData
 import networkx as nx
 import numpy as np
@@ -7,7 +7,7 @@ import cvxpy as cp
 # import matplotlib.pyplot as plt
 
 # Fleet size
-n_veh = 9*20
+n_veh = 9 * 20
 
 # DiGraph - unweighted
 g = nx.DiGraph()
@@ -93,6 +93,12 @@ def optimize_x(pu_loc, do_loc, x_idle):
     problem = cp.Problem(objective, constraints)
     problem.solve()
 
+    # print("Effective demand:")
+    # for i in range(len(flat_demand_matrix)):
+    #     print(np.round(flat_demand_matrix[i] - z_price.value[i]*scaled_flat_demand_matrix[i], 2), end=' ')
+    #     if (i+1) % numNodes == 0:
+    #         print("")
+
     print("Prices in $:")
     for ro in z_price.value.reshape(numNodes, numNodes):
         print(np.round(ro, 2))
@@ -106,18 +112,18 @@ def optimize_x(pu_loc, do_loc, x_idle):
     x_idle = [x_action[i][i] for i in range(numNodes)]
 
     # Update counters
-    for t in range(max(flat_tau)-1):
+    for t in range(max(flat_tau) - 1):
         for i in range(numNodes):
-            counters[t][i] = counters[t+1][i]
+            counters[t][i] = counters[t + 1][i]
 
     for i in range(numNodes):
-        counters[max(flat_tau)-1][i] = 0
+        counters[max(flat_tau) - 1][i] = 0
 
     for i in range(numNodes):
         for j in range(numNodes):
             if x_action[i][j] != 0 and i != j:
                 travel_time = tau[i][j]
-                counters[travel_time-1][j] += x_action[i][j]
+                counters[travel_time - 1][j] += x_action[i][j]
 
     # Missed requests
     miss_rides = 0
@@ -144,6 +150,6 @@ for k in range(tData.num_it):
     print("vehicles riding:", np.round(sum([sum(counters[i]) for i in range(len(counters))]), 2))
     x_bar, missed_rides = optimize_x(PULoc, DOLoc, x_bar)
     total_missed_rides += missed_rides
-
+print("---")
 print("Total missed rides:", int(total_missed_rides))
 print("QoS:", np.round(100 - (total_missed_rides / tData.numRequestsRed * 100), 2))
