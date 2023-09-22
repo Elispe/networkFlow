@@ -41,16 +41,17 @@ for row in S:
 
 counters = {}
 for i in range(np.max(S)):
-    counters[i] = np.array([0] * numNodes)
+    counters[i] = np.array(np.zeros(numNodes))
 
 total_missed_rides = 0
 
+price_factor = 3
 
 def optimize_xy(pu_loc, do_loc, x_idle):
 
     # Build demand matrix
-    R = np.array([np.zeros(numNodes, dtype=int) for _ in range(numNodes)])
-    R_scaled = np.array([np.zeros(numNodes, dtype=int) for _ in range(numNodes)])
+    R = np.array([np.zeros(numNodes) for _ in range(numNodes)])
+    R_scaled = np.array([np.zeros(numNodes) for _ in range(numNodes)])
     for i in range(len(pu_loc)):
         if not pu_loc[i] == do_loc[i]:
             R[pu_loc[i] - 1][do_loc[i] - 1] += 1
@@ -59,10 +60,14 @@ def optimize_xy(pu_loc, do_loc, x_idle):
     for ro in R:
         print(ro)
 
-    # for m in range(numNodes):
-    #     for n in range(numNodes):
-    #         if R[m][n] != 0:
-    #             R_scaled[m][n] = R[m][n] / (S[m][n] * beta)
+    for m in range(numNodes):
+        for n in range(numNodes):
+            if R[m][n] != 0:
+                R_scaled[m][n] = R[m][n] / (S[m][n] * beta * price_factor)
+
+    print("R_scaled matrix:")
+    for ro in R_scaled:
+        print(ro)
 
     nu = x_idle + counters[0]
     print("Available vehicles at each node:", nu)
@@ -71,20 +76,24 @@ def optimize_xy(pu_loc, do_loc, x_idle):
     ei = np.ones(numNodes)
     Y = cp.Variable(R.shape, "Y")
     X = cp.Variable(S.shape, "X")
-    #objective = cp.Maximize(cp.trace(R.T@Y) - cp.trace(R_scaled.T@cp.square(Y)) - beta * cp.trace(S.T@X))
-    objective = cp.Maximize(cp.trace(R.T @ Y) - beta * cp.trace(S.T @ X))
+    objective = cp.Maximize(cp.trace(R.T@Y) - cp.trace(R_scaled.T@cp.square(Y)) - beta * cp.trace(S.T@X))
+    #objective = cp.Maximize(cp.trace(R.T @ Y) - beta * cp.trace(S.T @ X))
     constraints = []
-    #constraints += [R-cp.multiply(R_scaled, Y) <= X]
-    constraints += [R <= X]
+    constraints += [R-cp.multiply(R_scaled, Y) <= X]
+    #constraints += [R <= X]
     constraints += [X @ ei == nu]
     constraints += [X >= 0]
-    constraints += [Y <= S * beta]
+    constraints += [Y <= S * beta * price_factor]
     problem = cp.Problem(objective, constraints)
     problem.solve()
 
     print("status:", problem.status)
     print("Prices in $:\n", np.round(Y.value, 2))
     print("X:\n", np.round(X.value, 2))
+
+    print("Effective Demand matrix:")
+    for ro in R-np.multiply(R_scaled, Y.value):
+        print(ro)
 
     x_idle = np.array([X.value[i][i] for i in range(numNodes)])
 
