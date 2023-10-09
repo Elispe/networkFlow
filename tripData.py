@@ -58,7 +58,7 @@ final_df['PUArea'] = final_df['PUArea'].astype('Int64')
 final_df['DOArea'] = final_df['DOArea'].astype('Int64')
 
 # Keep only trips within a selected number of areas in Manhattan
-mask_areas = (final_df['PUArea'] <= 4) & (final_df['DOArea'] <= 4) & (final_df['PUArea'] != final_df['DOArea'])
+mask_areas = (final_df['PUArea'] <= 9) & (final_df['DOArea'] <= 9) & (final_df['PUArea'] != final_df['DOArea'])
 final_areas_df = final_df.loc[mask_areas]
 # Show the features in dataset along datatype
 # final_areas_df.info()
