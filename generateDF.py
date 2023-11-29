@@ -3,7 +3,7 @@ import pandas as pd
 import datetime
 import numpy as np
 
-trips_df = pd.read_parquet('yellow_tripdata_2022.parquet', engine='pyarrow')
+trips_df = pd.read_parquet('yellow_tripdata_2022-02.parquet', engine='pyarrow')
 # Remove not needed features
 trips_df["trip_duration"] = trips_df["tpep_dropoff_datetime"] - trips_df["tpep_pickup_datetime"]
 trips_df = trips_df.drop(
@@ -38,13 +38,15 @@ final_df = final_df.rename(columns={"Area_x": "PUArea", "Area_y": "DOArea"})
 final_df = final_df.drop(["PULocationID", "DOLocationID"], axis=1)
 maskNaN = (final_df['PUArea'] > 0) & (final_df['DOArea'] > 0)
 final_df = final_df.loc[maskNaN]
+max_trip_duration = final_df["trip_duration"] < datetime.timedelta(hours=3) #set limit on max trip duration
+final_df = final_df.loc[max_trip_duration]
 final_df['PUArea'] = final_df['PUArea'].astype('Int64')
 final_df['DOArea'] = final_df['DOArea'].astype('Int64')
 
 # Keep only trips within a selected number of areas in Manhattan
-numNodes = 9
-mask_areas = (final_df['PUArea'] <= numNodes) & (final_df['DOArea'] <= numNodes) & (
-        final_df['PUArea'] != final_df['DOArea'])
+numNodes = 3
+mask_areas = ((final_df['PUArea'] <= numNodes) & (final_df['DOArea'] <= numNodes))
+              #& (final_df['PUArea'] != final_df['DOArea']))
 final_df = final_df.loc[mask_areas]
 
 # Uncomment to generate .csv dataframe
@@ -69,4 +71,3 @@ for orig in range(1, numNodes + 1):
                 arr = (final_hour_df['trip_duration'] / np.timedelta64(1, 's')).to_numpy()
                 tau[h][orig - 1][destin - 1] = (tau[h][orig - 1][destin - 1] + np.average(arr))/2 if len(arr) != 0 else tau[h][orig - 1][destin - 1]
                 ini += delta
-
