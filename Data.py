@@ -1,5 +1,5 @@
 import numpy as np
-rng = np.random.default_rng()
+#rng = np.random.default_rng()
 
 class Data:
     def __init__(self, df, tau, numNodes):
@@ -33,7 +33,11 @@ class Data:
         # TO DO: Standardize data: vectorize, use scaler, go back to matrix form
         # TO DO: make sure you can reproduce results fixing a seed for rng
 
-        return R00_unscaled[rng.integers(0, len(R00_unscaled))]
+        #return R00_unscaled[rng.integers(0, len(R00_unscaled))]
+        R00_exp = np.sum(R00_unscaled, axis=0)/len(R00_unscaled)
+
+        return R00_exp
+
 
 
 
