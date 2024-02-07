@@ -5,6 +5,8 @@ import warnings
 import matplotlib.pyplot as plt
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
+# Write False below for the deterministic case
+is_stochastic = True
 N_vehicles = 100;
 numNodes = 3
 ei = np.ones(numNodes)
@@ -15,8 +17,8 @@ delta_min = -10;
 delta_max = 10;
 
 theta = np.array([[12, 8, 4],[3, 22, 4], [25, 5, 20]]);
-alpha = 0.2;
-beta = .01;
+alpha = 1;
+beta = 0.1;
 omega = np.array([[1, 3, 2], [2, 4, 4], [3, 5, 7]]);
 
 Y = cp.Variable((numNodes, numNodes), "Y")
@@ -36,11 +38,9 @@ print("theta\n", theta)
 print("effective demand\n", theta - alpha*Y.value)
 print("X_cvx\n", X.value)
 print("Y_cvx\n", Y.value)
-print("Omega\n", omega)
 Xcvx = X.value
 Ycvx = Y.value
 
-#Compare with deterministic primal-dual method
 n_it = 1000
 eta = 0.02 # stepsize
 gamma1 = 0.1
@@ -52,6 +52,7 @@ L0 = np.zeros((numNodes,numNodes))
 errx = []
 erry = []
 
+#Compare with deterministic primal-dual method
 def primal_dual_determ(X0, Y0, L0):
 
     Y = cp.Variable((numNodes, numNodes), "Y")
@@ -80,13 +81,78 @@ def primal_dual_determ(X0, Y0, L0):
 
     return X.value, Y.value, L0
 
+#Compare with stochastic primal-dual method
+def primal_dual_stoch_known_grad(X0, Y0, L0):
+    z = theta-alpha*Y0
+    gradX = beta * omega - L0 + gamma1 * X0
+    gradY = -z + gamma1 * Y0
+
+    L0 = L0+10*eta*(z-X0-gamma2*L0)
+    L0[L0 < 0] = 0
+
+    Y = cp.Variable((numNodes, numNodes), "Y")
+    X = cp.Variable((numNodes, numNodes), "X")
+
+    obje = cp.sum_squares(X-X0+10*eta*gradX) + cp.sum_squares(Y-Y0+10*eta*gradY)
+    constr = []
+    constr += [X @ ei <= nu]
+    constr += [X >= 0]
+    constr += [Y >= -10]
+    constr += [Y <= 10]
+    probl = cp.Problem(cp.Minimize(obje), constr)
+    probl.solve()
+
+    return X.value, Y.value, L0
+
+def primal_dual_stoch(X1, Y1, L1, X0, Y0):
+    z = theta-alpha*Y1 + np.random.randn(numNodes,numNodes)
+    gradX = beta * omega - L1 + gamma1 * X1
+    gradY = -z + gamma1 * Y1
+
+    L1 = L1+10*eta*(z-X1-gamma2*L1)
+    L1[L1 < 0] = 0
+
+    errorx = np.linalg.norm(X1-X0)
+    errx.append(errorx)
+    errory = np.linalg.norm(Y1-Y0)
+    erry.append(errory)
+
+    Y = cp.Variable((numNodes, numNodes), "Y")
+    X = cp.Variable((numNodes, numNodes), "X")
+
+    obje = cp.sum_squares(X-X1+10*eta*gradX) + cp.sum_squares(Y-Y1+10*eta*gradY)
+    constr = []
+    constr += [X @ ei <= nu]
+    constr += [X >= 0]
+    constr += [Y >= -10]
+    constr += [Y <= 10]
+    probl = cp.Problem(cp.Minimize(obje), constr)
+    probl.solve()
+
+    return X.value, Y.value, L1
+
 for i in range(n_it):
     # Online algo
-    X0, Y0, L0 = primal_dual_determ(X0, Y0, L0)
+    if is_stochastic:
+        X0, Y0, L0 = primal_dual_stoch_known_grad(X0, Y0, L0)
+    else:
+        X0, Y0, L0 = primal_dual_determ(X0, Y0, L0)
 
-print("\nprimal-dual results")
+print("\nResults")
 print("X\n", X0)
 print("Y\n", Y0)
+
+if is_stochastic:
+    X1 = theta
+    Y1 = np.zeros((numNodes,numNodes))
+    L1 = np.zeros((numNodes,numNodes))
+    for i in range(n_it):
+        # Online algo
+        X1, Y1, L1 = primal_dual_stoch(X1, Y1, L1, X0, Y0)
+
+    print("\nPrimal-dual results")
+    print("X", X1)
+    print("Y", Y1)
 
 fig, axs = plt.subplots(2)
 axs[0].plot([x / numNodes for x in errx])
@@ -96,4 +162,6 @@ axs[1].set_ylabel("err_y")
 
 plt.xlabel("minutes")
 plt.show()
+
+
 
