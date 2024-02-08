@@ -1,4 +1,6 @@
-#Use solver to get solution
+#Use cvx solver to get solution
+#Demand is time dependent
+#Fleet size is conserved
 from Data import Data
 import numpy as np
 import cvxpy as cp
@@ -10,9 +12,9 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 rng = np.random.default_rng(seed=1)
 
 # Introduce parameters
-beta = 0.01  # operational cost ($/min)
+beta = 0.1  # operational cost ($/min)
 ei = np.ones(numNodes)
-alpha = 0.2 # elasticity
+alpha = 0.5 # elasticity
 
 max_riding_time=0
 for h in range(len(tau)):
@@ -34,28 +36,24 @@ data = Data(final_df, tau, numNodes)
 
 def solver(h, min):
     # riding time
-    print("tau\n", tau[h] // 60)
+    omega = tau[h] // 60
+    print("omega\n", omega)
 
     # nominal price
-    P = tau[h]//60*beta*200
+    P = omega*beta*20
     print("nominal price\n", P)
 
     # idling vehicles
     nu = counters[0]
     print("idling", nu)
-    theta = data.draw_R(h, min)*10
+    theta = data.draw_R(h, min)
     print("theta\n", theta)
-
-    # for i in range(numNodes):
-    #     for j in range(numNodes):
-    #         if R0[i][j]<=0:
-    #             R0[i][j]=0
-    # print("R0\n", R0)
 
     Y = cp.Variable((numNodes, numNodes), "Y")
     X = cp.Variable((numNodes, numNodes), "X")
 
-    obj = -cp.trace((theta - alpha * Y).T @ P + theta.T @ Y) + alpha * cp.sum_squares(Y) + beta * cp.trace(cp.transpose(tau[h]//60)@X)
+    obj = cp.trace(-(theta - alpha * Y).T @ (P) - theta.T @ (Y) + beta * (omega.T @ X)) + alpha * cp.sum_squares(Y)
+
     constraints = []
     constraints += [X @ ei == nu]
     constraints += [X >= 0]
@@ -64,7 +62,6 @@ def solver(h, min):
     constraints += [Y <= 10]
     problem = cp.Problem(cp.Minimize(obj), constraints)
     problem.solve()
-    print("problem status:", problem.status)
 
     R = theta - alpha * Y.value
     # Test: effective demand must be non-neg
@@ -110,7 +107,7 @@ def solver(h, min):
 
 start_time = time.time()
 
-sim_window = 60 #minutes
+sim_window = 3*60 #minutes
 h_in = 18
 min_in = 0
 for minu in range(sim_window):
