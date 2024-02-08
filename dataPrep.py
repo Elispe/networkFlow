@@ -1,7 +1,8 @@
 """
 Extracts ride request data from the Taxi and Limousine Commission, Manhattan, NY
-Returns stationary data (demand matrix) for a specific time window
+Returns array of (standardized) stationary data (demand matrix) received within a specific time window (e.g. 10.00-10:01AM) across a time interval (e.g. a month)
 """
+# Obs! Need to uncomment some parts in order to get standardized data
 import pandas as pd
 import numpy as np
 import datetime
@@ -16,11 +17,12 @@ trips_df = trips_df.drop(
      "mta_tax", "tip_amount", "tolls_amount", "total_amount", "improvement_surcharge", "congestion_surcharge",
      "airport_fee"], axis=1)
 
-def create_R(dd_in, dd_fin, h_in, time_period, numNodes):
+def create_R(dd_in, dd_fin, h_in, minut, delta_t, numNodes):
     # Choose which days you want the data for
     yyyy = "2022"
     mm = "03"
     R_flat = []
+    R_unscaled = []
     while dd_in <= dd_fin:
         mask = (trips_df['tpep_pickup_datetime'] >= "-".join([yyyy, mm, str(dd_in)])) & \
                (trips_df['tpep_pickup_datetime'] < "-".join([yyyy, mm, str(dd_in + 1)]))
@@ -63,8 +65,8 @@ def create_R(dd_in, dd_fin, h_in, time_period, numNodes):
         final_areas_df = final_df.loc[mask_areas]
 
         # Keep only ride requests received within the time window specified below. Choose the time period.
-        ini = datetime.datetime(int(yyyy), int(mm), dd_in, h_in, 0, 0)
-        delta_min = datetime.timedelta(seconds=time_period * 60)
+        ini = datetime.datetime(int(yyyy), int(mm), dd_in, h_in, minut, 0)
+        delta_min = datetime.timedelta(seconds=delta_t * 60)
 
         mask_areas_min = (final_areas_df['tpep_pickup_datetime'] >= ini) & (
                 final_areas_df['tpep_pickup_datetime'] < ini + delta_min)
@@ -80,21 +82,22 @@ def create_R(dd_in, dd_fin, h_in, time_period, numNodes):
         for i in range(len(PU_arr)):
             if not PU_arr[i] == DO_arr[i]:
                 theta[PU_arr[i] - 1][DO_arr[i] - 1] += 1
+        #print(theta)
 
-        R_flat.append(theta.flatten())
+        R_unscaled.append(theta)
+        # R_flat.append(theta.flatten())
         dd_in += 1
-        print(R_flat)
 
-    scaler = StandardScaler()
-    scaler.fit(R_flat)
-    R = scaler.transform(R_flat)
+    # scaler = StandardScaler()
+    # scaler.fit(R_flat)
+    # R = scaler.transform(R_flat)
+    # Check that scaled data has zero mean and unit variance
+    # print(R.mean(axis=0))
+    # print(R.std(axis=0))
 
-    R_mat = []
-    for ar in R:
-        R_mat.append(ar.reshape(numNodes, numNodes))
+    # R_mat = []
+    # for ar in R:
+    #     R_mat.append(ar.reshape(numNodes, numNodes))
 
-    return R_mat, scaler
-
-
-
-
+    #return R_mat, scaler
+    return R_unscaled
