@@ -1,5 +1,6 @@
 # Reproduce Matlab code "Price_allocation_last.m"
 # (of course the random vector is different, so results are slightly different for the stochastic case "primal_dual_stoch")
+# 1D case
 import cvxpy as cp
 import numpy as np
 import warnings
