@@ -3,7 +3,7 @@ import pandas as pd
 import datetime
 import numpy as np
 
-trips_df = pd.read_parquet('yellow_tripdata_2022-02.parquet', engine='pyarrow')
+trips_df = pd.read_parquet('yellow_tripdata_2022-03.parquet', engine='pyarrow')
 # Remove not needed features
 trips_df["trip_duration"] = trips_df["tpep_dropoff_datetime"] - trips_df["tpep_pickup_datetime"]
 trips_df = trips_df.drop(
@@ -45,8 +45,7 @@ final_df['DOArea'] = final_df['DOArea'].astype('Int64')
 
 # Keep only trips within a selected number of areas in Manhattan
 numNodes = 3
-mask_areas = ((final_df['PUArea'] <= numNodes) & (final_df['DOArea'] <= numNodes))
-              #& (final_df['PUArea'] != final_df['DOArea']))
+mask_areas = ((final_df['PUArea'] <= numNodes) & (final_df['DOArea'] <= numNodes) & (final_df['PUArea'] != final_df['DOArea']))
 final_df = final_df.loc[mask_areas]
 
 # Uncomment to generate .csv dataframe
