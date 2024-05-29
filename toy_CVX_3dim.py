@@ -138,7 +138,11 @@ for i in range(n_it):
     else:
         X0, Y0, L0 = primal_dual_determ(X0, Y0, L0)
 
-print("\nResults")
+print("\nResults", end=" ")
+if is_stochastic:
+    print("stochastic case, known grad")
+else:
+    print("deterministic case")
 print("X\n", X0)
 print("Y\n", Y0)
 
@@ -150,7 +154,7 @@ if is_stochastic:
         # Online algo
         X1, Y1, L1 = primal_dual_stoch(X1, Y1, L1, X0, Y0)
 
-    print("\nPrimal-dual results")
+    print("\nstochastic case, unknown grad")
     print("X", X1)
     print("Y", Y1)
 

@@ -148,7 +148,7 @@ print("Y", Y2)
 for i in range(n_it):
     X0, Y0, L0 = primal_dual_stoch_known_grad(X0, Y0, L0)
 
-print("\nstoch known grad results")
+print("\nstoch, known grad results")
 print("effective demand\n", theta - alpha*Y0)
 print("X", X0)
 print("Y", Y0)
@@ -159,7 +159,7 @@ L1 = np.zeros(numNodes)
 for i in range(n_it):
     X1, Y1, L1 = primal_dual_stoch(X1, Y1, L1, X0, Y0)
 
-print("\nstoch results")
+print("\nstoch, unknown grad results")
 print("effective demand\n", theta - alpha*Y1)
 print("X", X1)
 print("Y", Y1)
