@@ -45,7 +45,7 @@ final_df['DOArea'] = final_df['DOArea'].astype('Int64')
 
 # Keep only trips within a selected number of areas in Manhattan
 numNodes = 3
-mask_areas = ((final_df['PUArea'] <= numNodes) & (final_df['DOArea'] <= numNodes) & (final_df['PUArea'] != final_df['DOArea']))
+mask_areas = ((final_df['PUArea'] <= numNodes) & (final_df['DOArea'] <= numNodes)) #& (final_df['PUArea'] != final_df['DOArea'])
 final_df = final_df.loc[mask_areas]
 
 # Uncomment to generate .csv dataframe

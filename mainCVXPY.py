@@ -1,6 +1,7 @@
 #Use cvx solver to get solution
-#Demand is time dependent
+#Demand is time dependent and impacted by prices
 #Fleet size is conserved
+# works when rides within same area are considered (modify generateDF.py)
 from Data import Data
 import numpy as np
 import cvxpy as cp
@@ -46,7 +47,7 @@ def solver(h, min):
     # idling vehicles
     nu = counters[0]
     print("idling", nu)
-    theta = data.draw_R(h, min)
+    theta = data.avg_R(h, min, period_min=1)
     print("theta\n", theta)
 
     Y = cp.Variable((numNodes, numNodes), "Y")
@@ -107,9 +108,9 @@ def solver(h, min):
 
 start_time = time.time()
 
-sim_window = 3*60 #minutes
-h_in = 18
-min_in = 0
+sim_window = 5*60 #minutes
+h_in = 17
+min_in = 40
 for minu in range(sim_window):
     print("***Time", h_in, ":", min_in)
     solver(h_in, min_in)
