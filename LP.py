@@ -1,6 +1,7 @@
 # Solve LP with CVXPY without considering the impact of prices on the demand
 # number of vehicles is conserved
 # no queue: missed rides are lost
+# works when rides within same area are NOT considered (modify generateDF.py)
 import cvxpy as cp
 import numpy as np
 from Data import Data
