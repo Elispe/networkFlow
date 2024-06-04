@@ -143,6 +143,7 @@ print("\ndeterm results")
 print("effective demand\n", theta - alpha*Y2)
 print("X", X2)
 print("Y", Y2)
+print("L", L2)
 
 #Consider stochastic case, with/without gradient knowledge
 for i in range(n_it):
@@ -152,6 +153,7 @@ print("\nstoch, known grad results")
 print("effective demand\n", theta - alpha*Y0)
 print("X", X0)
 print("Y", Y0)
+print("L", L0)
 
 X1 = theta
 Y1= np.zeros(numNodes)
@@ -163,6 +165,7 @@ print("\nstoch, unknown grad results")
 print("effective demand\n", theta - alpha*Y1)
 print("X", X1)
 print("Y", Y1)
+print("L", L1)
 
 # Plot error e.g. now stochastic case with gradient knowledge vs without gradient knowledge
 fig, axs = plt.subplots(2)
